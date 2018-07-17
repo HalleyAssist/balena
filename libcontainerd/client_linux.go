@@ -50,13 +50,13 @@ func (clnt *client) AddProcess(ctx context.Context, containerID, processFriendly
 	clnt.lock(containerID)
 	defer clnt.unlock(containerID)
 	container, err := clnt.getContainer(containerID)
-	logrus.Errorf("@@1: HALLEY 1 %d", err)
+	logrus.Errorf("HALLEY 1 %#v", err)
 	if err != nil {
 		return -1, err
 	}
 
 	spec, err := container.spec()
-	logrus.Errorf("@@1: HALLEY 2 %d", err)
+	logrus.Errorf("HALLEY 2 %#v", err)
 	if err != nil {
 		return -1, err
 	}
@@ -109,21 +109,22 @@ func (clnt *client) AddProcess(ctx context.Context, containerID, processFriendly
 
 	fifoCtx, cancel := context.WithCancel(context.Background())
 	defer func() {
-		logrus.Errorf("@@1: HALLEY 3 %d", err)
+		logrus.Errorf("HALLEY 7 %#v", err)
 		if err != nil {
 			cancel()
 		}
 	}()
 
 	iopipe, err := p.openFifos(fifoCtx, sp.Terminal)
-	logrus.Errorf("@@1: HALLEY 4 %d", err)
+	logrus.Errorf("HALLEY 3 %#v", err)
 	if err != nil {
 		return -1, err
 	}
 
 	resp, err := clnt.remote.apiClient.AddProcess(ctx, r)
-	logrus.Errorf("@@1: HALLEY 5 %d", err)
+	logrus.Errorf("HALLEY 4 %#v", err)
 	if err != nil {
+		logrus.Errorf("HALLEY 4.5 %#v %#v", ctx, r)
 		p.closeFifos(iopipe)
 		return -1, err
 	}
@@ -138,7 +139,7 @@ func (clnt *client) AddProcess(ctx context.Context, containerID, processFriendly
 				err = err2
 			}
 		})
-		logrus.Errorf("@@1: HALLEY 6 %d", err)
+		logrus.Errorf("HALLEY 5 %#v", err)
 		return err
 	})
 
@@ -146,7 +147,7 @@ func (clnt *client) AddProcess(ctx context.Context, containerID, processFriendly
 
 	if err := attachStdio(*iopipe); err != nil {
 		p.closeFifos(iopipe)
-		logrus.Errorf("@@1: HALLEY 6 %d", err)
+		logrus.Errorf("HALLEY 6 %#v", err)
 		return -1, err
 	}
 

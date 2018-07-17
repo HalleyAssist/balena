@@ -231,8 +231,9 @@ func (d *Daemon) ContainerExecStart(ctx context.Context, name string, stdin io.R
 	ec.StreamConfig.AttachStreams(&attachConfig)
 	attachErr := ec.StreamConfig.CopyStreams(ctx, &attachConfig)
 
+	logrus.Errorf("HALLEY 00 %v %v", name, attachErr)
 	systemPid, err := d.containerd.AddProcess(ctx, c.ID, name, p, ec.InitializeStdio)
-	logrus.Errorf("@@1: %d %d", attachErr, err)
+	logrus.Errorf("HALLEY 01 %d %d", attachErr, err)
 	if err != nil {
 		return err
 	}
