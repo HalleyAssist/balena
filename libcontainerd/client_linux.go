@@ -121,10 +121,9 @@ func (clnt *client) AddProcess(ctx context.Context, containerID, processFriendly
 		return -1, err
 	}
 
-	resp, err := clnt.remote.apiClient.AddProcess(ctx, r)
 	logrus.Errorf("HALLEY 4 %#v", err)
+	resp, err := clnt.remote.apiClient.AddProcess(ctx, r)
 	if err != nil {
-		logrus.Errorf("HALLEY 4.5 %#v %#v", ctx, r)
 		p.closeFifos(iopipe)
 		return -1, err
 	}

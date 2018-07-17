@@ -14,6 +14,7 @@ import (
 var clockTicksPerSecond = uint64(system.GetClockTicks())
 
 func (s *apiServer) AddProcess(ctx context.Context, r *types.AddProcessRequest) (*types.AddProcessResponse, error) {
+	fmt.Println("HALLEY 4.5 HOPEFULLY")
 	process := &specs.ProcessSpec{
 		Terminal: r.Terminal,
 		Args:     r.Args,
@@ -48,6 +49,7 @@ func (s *apiServer) AddProcess(ctx context.Context, r *types.AddProcessRequest) 
 	if r.Pid == "" {
 		return nil, fmt.Errorf("process id cannot be empty")
 	}
+	fmt.Println("HALLEY 4.6")
 	e := &supervisor.AddProcessTask{}
 	e.ID = r.Id
 	e.PID = r.Pid
@@ -59,8 +61,10 @@ func (s *apiServer) AddProcess(ctx context.Context, r *types.AddProcessRequest) 
 	e.Ctx = ctx
 	s.sv.SendTask(e)
 	if err := <-e.ErrorCh(); err != nil {
+		fmt.Printf("HALLEY 4.7 :( %v\n", err)
 		return nil, err
 	}
+	fmt.Println("HALLEY 4.7 :)")
 	sr := <-e.StartResponse
 	return &types.AddProcessResponse{SystemPid: uint32(sr.ExecPid)}, nil
 }
