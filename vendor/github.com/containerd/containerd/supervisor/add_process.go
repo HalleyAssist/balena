@@ -3,7 +3,7 @@ package supervisor
 import (
 	"os"
 	"time"
-
+	"fmt"
 	"github.com/containerd/containerd/runtime"
 	"github.com/containerd/containerd/specs"
 	"golang.org/x/net/context"
@@ -29,12 +29,15 @@ func (s *Supervisor) addProcess(t *AddProcessTask) error {
 	if !ok {
 		return ErrContainerNotFound
 	}
+	fmt.Println("HALLEY Trying to addProcess")
 	process, err := ci.container.Exec(t.Ctx, t.PID, *t.ProcessSpec, runtime.NewStdio(t.Stdin, t.Stdout, t.Stderr))
 	if err != nil {
+		fmt.Printf("HALLEY addProcess err: %v\n", err)
 		return err
 	}
 	s.newExecSyncChannel(t.ID, t.PID)
 	if err := s.monitorProcess(process); err != nil {
+		fmt.Printf("HALLEY Unable to monitor new process: %v\n", err)
 		s.deleteExecSyncChannel(t.ID, t.PID)
 		// Kill process
 		process.Signal(os.Kill)

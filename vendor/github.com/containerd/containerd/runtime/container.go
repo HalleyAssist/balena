@@ -447,12 +447,15 @@ func (c *container) Start(ctx context.Context, checkpointPath string, s Stdio) (
 }
 
 func (c *container) Exec(ctx context.Context, pid string, pspec specs.ProcessSpec, s Stdio) (pp Process, err error) {
+	fmt.Println("HALLEY runtime/container.go exec")
 	processRoot := filepath.Join(c.root, c.id, pid)
 	if err := os.Mkdir(processRoot, 0755); err != nil {
+		fmt.Printf("HALLEY could not mkdir: %v\n", err)
 		return nil, err
 	}
 	defer func() {
 		if err != nil {
+			fmt.Printf("HALLEY deferred err handler: %v\n", err)
 			c.RemoveProcess(pid)
 		}
 	}()
@@ -465,6 +468,7 @@ func (c *container) Exec(ctx context.Context, pid string, pspec specs.ProcessSpe
 	}
 	spec, err := c.readSpec()
 	if err != nil {
+		fmt.Printf("HALLEY readSpec err: %v\n", err)
 		return nil, err
 	}
 	config := &processConfig{
@@ -478,9 +482,11 @@ func (c *container) Exec(ctx context.Context, pid string, pspec specs.ProcessSpe
 	}
 	p, err := newProcess(config)
 	if err != nil {
+		fmt.Printf("HALLEY newProcess err: %v\n", err)
 		return nil, err
 	}
 	if err := c.createCmd(ctx, pid, cmd, p); err != nil {
+		fmt.Printf("HALLEY createCmd err: %v\n", err)
 		return nil, err
 	}
 	return p, nil
