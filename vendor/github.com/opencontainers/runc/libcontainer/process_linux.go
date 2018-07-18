@@ -68,32 +68,40 @@ func (p *setnsProcess) signal(sig os.Signal) error {
 func (p *setnsProcess) start() (err error) {
 	defer p.parentPipe.Close()
 	err = p.cmd.Start()
+	fmt.Printf("HALLEY setnsProcess start 1 %v %v\n", p.childPipe, p.parentPipe)
 	p.childPipe.Close()
+	fmt.Printf("HALLEY setnsProcess start 2 %v %v\n", p.childPipe, p.parentPipe)
 	if err != nil {
 		return newSystemErrorWithCause(err, "starting setns process")
 	}
+	fmt.Printf("HALLEY setnsProcess start 3 %v %v\n", p.childPipe, p.parentPipe)
 	if p.bootstrapData != nil {
 		if _, err := io.Copy(p.parentPipe, p.bootstrapData); err != nil {
 			return newSystemErrorWithCause(err, "copying bootstrap data to pipe")
 		}
 	}
+	fmt.Printf("HALLEY setnsProcess start 4 %v %v\n", p.childPipe, p.parentPipe)
 	if err = p.execSetns(); err != nil {
 		return newSystemErrorWithCause(err, "executing setns process")
 	}
+	fmt.Printf("HALLEY setnsProcess start 5 %v %v\n", p.childPipe, p.parentPipe)
 	// We can't join cgroups if we're in a rootless container.
 	if !p.config.Rootless && len(p.cgroupPaths) > 0 {
 		if err := cgroups.EnterPid(p.cgroupPaths, p.pid()); err != nil {
 			return newSystemErrorWithCausef(err, "adding pid %d to cgroups", p.pid())
 		}
 	}
+	fmt.Printf("HALLEY setnsProcess start 6 %v %v\n", p.childPipe, p.parentPipe)
 	// set rlimits, this has to be done here because we lose permissions
 	// to raise the limits once we enter a user-namespace
 	if err := setupRlimits(p.config.Rlimits, p.pid()); err != nil {
 		return newSystemErrorWithCause(err, "setting rlimits for process")
 	}
+	fmt.Printf("HALLEY setnsProcess start 7 %v %v %#v\n", p.childPipe, p.parentPipe, p.config)
 	if err := utils.WriteJSON(p.parentPipe, p.config); err != nil {
 		return newSystemErrorWithCause(err, "writing config to pipe")
 	}
+	fmt.Printf("HALLEY setnsProcess start 8 %v %v\n", p.childPipe, p.parentPipe)
 
 	ierr := parseSync(p.parentPipe, func(sync *syncT) error {
 		switch sync.Type {

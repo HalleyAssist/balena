@@ -435,6 +435,7 @@ func (c *linuxContainer) newSetnsProcess(p *Process, cmd *exec.Cmd, parentPipe, 
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("HALLEY newSetnsPRocess with pipes %v and %v\n", childPipe, parentPipe)
 	return &setnsProcess{
 		cmd:           cmd,
 		cgroupPaths:   c.cgroupManager.GetPaths(),

@@ -486,7 +486,7 @@ func (c *container) Exec(ctx context.Context, pid string, pspec specs.ProcessSpe
 		return nil, err
 	}
 	if err := c.createCmd(ctx, pid, cmd, p); err != nil {
-		fmt.Printf("HALLEY createCmd err: %v\n", err)
+		fmt.Printf("HALLEY createCmd (pid: %v, proc: %#v) err: %v\n", pid, p, err)
 		return nil, err
 	}
 	return p, nil
@@ -501,6 +501,7 @@ func (c *container) createCmd(ctx context.Context, pid string, cmd *exec.Cmd, p 
 				return fmt.Errorf("%s not installed on system", c.shim)
 			}
 		}
+		fmt.Printf("HALLEY createCmd not found err: %v\n", err)
 		return err
 	}
 	// We need the pid file to have been written to run
@@ -509,6 +510,8 @@ func (c *container) createCmd(ctx context.Context, pid string, cmd *exec.Cmd, p 
 			err := p.cmd.Wait()
 			if err == nil {
 				p.cmdSuccess = true
+			} else {
+				fmt.Printf("HALLEY createCmd hasn't set cmdSuccess: %v\n", err)
 			}
 
 			if same, err := p.isSameProcess(); same && p.pid > 0 {
@@ -535,6 +538,7 @@ func (c *container) createCmd(ctx context.Context, pid string, cmd *exec.Cmd, p 
 	ch := make(chan error)
 	go func() {
 		if err := c.waitForCreate(p, cmd); err != nil {
+			fmt.Printf("HALLEY createCmd waitForCreate err: %v\n", err)
 			ch <- err
 			return
 		}

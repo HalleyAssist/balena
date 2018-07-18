@@ -46,3 +46,27 @@ Licensing
 Balena is licensed under the Apache License, Version 2.0. See
 [LICENSE](https://github.com/resin-os/balena/blob/master/LICENSE) for the full
 license text.
+
+
+## Investigating the `write init-p: broken pipe` error
+
+**Behaviour:** When running Balena exec with less than a huge amount of available memory, the exec fails with 'rpc error: code = Unknown desc = oci runtime error: exec failed: container_linux.go:263: starting container process caused "process_linux.go:95: writing config to pipe caused "write init-p: broken pipe"'
+
+Something closes (?) setnsProcess' parentPipe before it gets to write its config during start()
+
+Final reported error: [process_linux.go#L95](https://github.com/resin-os/balena/blob/17.06-resin/vendor/github.com/opencontainers/runc/libcontainer/process_linux.go#L95)
+
+which is called by [container_linux.go#L263](https://github.com/resin-os/balena/blob/17.06-resin/vendor/github.com/opencontainers/runc/libcontainer/container_linux.go#L263)
+
+The flow to get to those files starts as:
+- [/libcontainerd/client_linux.go](https://github.com/resin-os/balena/blob/6785696ce1e6dea3559aae73ebfeb23909a0d61a/libcontainerd/client_linux.go#L124) does remote.apiClient.AddProcess(request)
+
+- [containerd/api/gprc/server/server_linux.go](https://github.com/resin-os/balena/blob/328a1d189eca816ca045bd467cd0476f73ea570d/vendor/github.com/containerd/containerd/api/grpc/server/server_linux.go#L62) does SendTask(addProcess)
+
+- [containerd/containerd/supervisor/supervisor.go](https://github.com/resin-os/balena/blob/328a1d189eca816ca045bd467cd0476f73ea570d/vendor/github.com/containerd/containerd/supervisor/supervisor.go#L385) routes the task to add_process.go
+
+- [containerd/containerd/supervisor/add_process.go](https://github.com/resin-os/balena/blob/328a1d189eca816ca045bd467cd0476f73ea570d/vendor/github.com/containerd/containerd/supervisor/add_process.go#L32) calls container.Exec
+
+- [containerd/containerd/runtime/container.go](https://github.com/resin-os/balena/blob/328a1d189eca816ca045bd467cd0476f73ea570d/vendor/github.com/containerd/containerd/runtime/container.go#L483)'s Exec runs normally until createCmd, where err becomes the SystemErrorWithCauses
+
+- ...
