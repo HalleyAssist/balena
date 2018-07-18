@@ -661,9 +661,9 @@ func (c *container) waitForCreate(p *process, cmd *exec.Cmd) error {
 							return
 						}
 						for _, m := range messages {
-							fmt.Printf("HALLEY waitForCreate 6: %v\n", err)
+							fmt.Printf("HALLEY waitForCreate 6: %v\n", m)
 							if m.Level == "error" {
-								fmt.Printf("HALLEY waitForCreate 6.5: %v\n", err)
+								fmt.Printf("HALLEY waitForCreate 6.5: %v\n", m)
 								wc <- fmt.Errorf("oci runtime error: %v", m.Msg)
 								return
 							}
@@ -694,7 +694,7 @@ func (c *container) waitForCreate(p *process, cmd *exec.Cmd) error {
 		}
 		return nil
 	case <-time.After(c.timeout):
-		fmt.Printf("HALLEY waitForCreate 8: %v\n", err)
+		fmt.Printf("HALLEY waitForCreate 8: timeout\n")
 		cmd.Process.Kill()
 		cmd.Wait()
 		return ErrContainerStartTimeout
