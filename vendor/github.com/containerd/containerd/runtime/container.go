@@ -486,7 +486,7 @@ func (c *container) Exec(ctx context.Context, pid string, pspec specs.ProcessSpe
 		return nil, err
 	}
 	if err := c.createCmd(ctx, pid, cmd, p); err != nil {
-		fmt.Printf("HALLEY createCmd (pid: %v, proc: %#v) err: %v\n", pid, p, err)
+		fmt.Printf("HALLEY createCmd (pid: %v) err: %v\n", pid, p, err)
 		return nil, err
 	}
 	return p, nil
@@ -495,13 +495,14 @@ func (c *container) Exec(ctx context.Context, pid string, pspec specs.ProcessSpe
 func (c *container) createCmd(ctx context.Context, pid string, cmd *exec.Cmd, p *process) error {
 	p.cmd = cmd
 	if err := cmd.Start(); err != nil {
+		fmt.Printf("HALLEY createCmd Start err: %v\n", err)
 		close(p.cmdDoneCh)
 		if exErr, ok := err.(*exec.Error); ok {
 			if exErr.Err == exec.ErrNotFound || exErr.Err == os.ErrNotExist {
+				fmt.Printf("HALLEY createCmd not found err: %v\n", err)
 				return fmt.Errorf("%s not installed on system", c.shim)
 			}
 		}
-		fmt.Printf("HALLEY createCmd not found err: %v\n", err)
 		return err
 	}
 	// We need the pid file to have been written to run
@@ -537,6 +538,7 @@ func (c *container) createCmd(ctx context.Context, pid string, cmd *exec.Cmd, p 
 
 	ch := make(chan error)
 	go func() {
+		fmt.Printf("HALLEY pre-waitForCreate %#v %#v\n", p, cmd)
 		if err := c.waitForCreate(p, cmd); err != nil {
 			fmt.Printf("HALLEY createCmd waitForCreate err: %v\n", err)
 			ch <- err
@@ -623,9 +625,11 @@ func (c *container) waitForCreate(p *process, cmd *exec.Cmd) error {
 	go func() {
 		for {
 			if _, err := p.getPidFromFile(); err != nil {
+				fmt.Printf("HALLEY waitForCreate 1: %v\n", err)
 				if os.IsNotExist(err) || err == errInvalidPidInt || err == errContainerNotFound {
 					alive, err := isAlive(cmd)
 					if err != nil {
+						fmt.Printf("HALLEY waitForCreate 2: %v\n", err)
 						wc <- err
 						return
 					}
@@ -634,11 +638,14 @@ func (c *container) waitForCreate(p *process, cmd *exec.Cmd) error {
 						// out of the logs or the shim could have encountered an error
 						messages, err := readLogMessages(filepath.Join(p.root, "shim-log.json"))
 						if err != nil {
+							fmt.Printf("HALLEY waitForCreate 3: %v\n", err)
 							wc <- err
 							return
 						}
 						for _, m := range messages {
+							fmt.Printf("HALLEY waitForCreate 4: %v\n", m)
 							if m.Level == "error" {
+								fmt.Printf("HALLEY waitForCreate 4.5: %v\n", m)
 								wc <- fmt.Errorf("shim error: %v", m.Msg)
 								return
 							}
@@ -646,6 +653,7 @@ func (c *container) waitForCreate(p *process, cmd *exec.Cmd) error {
 						// no errors reported back from shim, check for runc/runtime errors
 						messages, err = readLogMessages(filepath.Join(p.root, "log.json"))
 						if err != nil {
+							fmt.Printf("HALLEY waitForCreate 5: %v\n", err)
 							if os.IsNotExist(err) {
 								err = ErrContainerNotStarted
 							}
@@ -653,7 +661,9 @@ func (c *container) waitForCreate(p *process, cmd *exec.Cmd) error {
 							return
 						}
 						for _, m := range messages {
+							fmt.Printf("HALLEY waitForCreate 6: %v\n", err)
 							if m.Level == "error" {
+								fmt.Printf("HALLEY waitForCreate 6.5: %v\n", err)
 								wc <- fmt.Errorf("oci runtime error: %v", m.Msg)
 								return
 							}
@@ -674,6 +684,7 @@ func (c *container) waitForCreate(p *process, cmd *exec.Cmd) error {
 	}()
 	select {
 	case err := <-wc:
+		fmt.Printf("HALLEY waitForCreate 7: %v\n", err)
 		if err != nil {
 			return err
 		}
@@ -683,6 +694,7 @@ func (c *container) waitForCreate(p *process, cmd *exec.Cmd) error {
 		}
 		return nil
 	case <-time.After(c.timeout):
+		fmt.Printf("HALLEY waitForCreate 8: %v\n", err)
 		cmd.Process.Kill()
 		cmd.Wait()
 		return ErrContainerStartTimeout
